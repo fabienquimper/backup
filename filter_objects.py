@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import argparse
 import time
+from array import array
 from pythonosc import dispatcher
 from pythonosc import osc_server
 from pythonosc import udp_client
@@ -11,6 +12,79 @@ CONFIG_NETWORK_PORT_FOR_SEQUENCE = 8005
 CONFIG_NETWORK_PORT_FOR_PROCESSING = 8003
 CONFIG_IS_SEND_TO_PROCESSING = True
 CONFIG_PROCESSING_MS_SLEEP_BETWEEN_IMAGE = 150
+
+# Read CSV
+df = pd.read_csv('data-0-4_tab_header_cleaned.csv', header=[0], sep='\t') 
+
+print('All columns names:')
+print(list(df.columns))
+#'Jour', 'Annee', 'Mois', 'Jour.1', 'Depart', 'Arrivee', 'Pays', 'Km_jours', 'Km_cumule', 'Altitude', 'Lat_degres', 'Lat_minutes', 'Lat_decimale', 'Lat_radian', 'Long_degres', 'Long_minutes', 'Long_decimale', 'Long_radian', 'km_vol_oiseau', 'km_corde', 'km_segment', 'km_cumule', 'Unnamed: 22', 'Objet', 'Lieu', 'Contexte', 'Catégorie', 'Post', 'Jour xxx', 'Titre', 'Unnamed: 30', 'Poids', 'Taille', 'Couleur', 'Matiere', 'Origine', 'Unnamed: 36', 'Date', 'Coordonnees'
+
+#print('Print all datas')
+#print(df)
+
+# Config filter
+all_filter_value = []
+all_filter_min_max = []
+
+def add_value_filter(filterString):
+    filterArray = filterString.split(" ")
+    filterColumn = filterArray[0] #Exemple pays
+    filterKey = filterArray[1] # Exemple France
+    filterIsOn = filterArray[2] # Exemple 1
+
+    # Update the filter
+    isExisting = False;
+    for index, filt in enumerate(all_filter_value):
+        if (filt[0] == filterColumn and filt[1] == filterKey):
+            isExisting = True
+            all_filter_value[index][2] = filterIsOn 
+
+    if not isExisting:
+        all_filter_value.append(filterArray)
+
+    print("All filter value:")
+    print(all_filter_value)
+def add_min_max_filter(filterString):
+    filterArray = filterString.split(" ")
+    filterColumn = filterArray[0] #Exemple altitude
+    filterMin = int(filterArray[1]) # Exemple 23
+    filterMax = int(filterArray[2]) # Exemple 2000
+
+    # Update the filter
+    isExisting = False;
+    for index, filt in enumerate(all_filter_min_max):
+        if (filt[0] == filterColumn):
+            isExisting = True
+            all_filter_min_max[index][1] = filterMin
+            all_filter_min_max[index][2] = filterMax
+
+    if not isExisting:
+        all_filter_min_max.append((filterColumn, filterMin, filterMax))
+
+    print("All filter min_max:")
+    print(all_filter_min_max)
+def get_data_from_filter():
+    dfCopy = df.copy()
+    # Add value filter
+    for index, filt in enumerate(all_filter_value):
+        if (filt[2] == "1"):
+            dfCopy = dfCopy.loc[dfCopy[filt[0]] == filt[1]]
+
+    # Add min-max filter
+    for index, filt in enumerate(all_filter_min_max):
+        dfCopy = dfCopy.loc[(dfCopy[filt[0]] >= int(filt[1])) & (dfCopy[filt[0]] <= int(filt[2]))]
+
+    return dfCopy
+def reset_filter():
+    all_filter_value = []
+    all_filter_min_max = []
+
+    print("All filter min_max:")
+    print(all_filter_min_max)
+
+    print("All filter value:")
+    print(all_filter_value)
 
 
 ######## Configure the server / client
@@ -33,11 +107,17 @@ def print_list(unused_addr, args):
 dispatcher = dispatcher.Dispatcher()
 
 def filter_value(unused_addr, args):
-    print("Filter value: [{0}]".format(args))
+    print("Filter value: col key isOn?:[{0}]".format(args))
+    add_value_filter(args)
+    objects_filtered()
 def filter_reset(unused_addr, args):
-    print("Filter reset: [{0}]".format(args))
+    print("Filter reset.".format(args))
+    reset_filter()
+    objects_filtered()
 def filter_min_max(unused_addr, args):
-    print("Filter min-max: [{0}]".format(args))
+    print("Filter min-max: col min max:[{0}] ".format(args))
+    add_min_max_filter(args)
+    objects_filtered()
 # Id mode has been received (from another OSC message)
 dispatcher.map("/control/controler/sequence", print_objects)
 dispatcher.map("/control/controler/filter/value", filter_value)
@@ -48,16 +128,35 @@ dispatcher.map("/control/controler/filter/result", print_list)
 server = osc_server.ThreadingOSCUDPServer((args.ip, args.port), dispatcher) 
 #### END OF OSC CONFIGURATION
 
+def objects_filtered():
+    dfFiltered = get_data_from_filter()
+    #print(dfFiltered)
+    output_objects(dfFiltered)
 
-# Read CSV
-df = pd.read_csv('data-0-4_tab_header_cleaned.csv', header=[0], sep='\t') 
+def output_objects(resultDf):
+   # print(resultDf['Jour'])
+    print(resultDf)
 
-print('All columns names:')
-print(list(df.columns))
-#'Jour', 'Annee', 'Mois', 'Jour.1', 'Depart', 'Arrivee', 'Pays', 'Km_jours', 'Km_cumule', 'Altitude', 'Lat_degres', 'Lat_minutes', 'Lat_decimale', 'Lat_radian', 'Long_degres', 'Long_minutes', 'Long_decimale', 'Long_radian', 'km_vol_oiseau', 'km_corde', 'km_segment', 'km_cumule', 'Unnamed: 22', 'Objet', 'Lieu', 'Contexte', 'Catégorie', 'Post', 'Jour xxx', 'Titre', 'Unnamed: 30', 'Poids', 'Taille', 'Couleur', 'Matiere', 'Origine', 'Unnamed: 36', 'Date', 'Coordonnees'
+    #print(type(resultDf))
+    #resultDf.to_csv('data-filtered.csv', sep='\t') 
 
-#print('Print all datas')
-#print(df)
+    result = resultDf
+    # Display all results of the sequence selected
+    object_result = np.array2string(result['Jour'].values, separator='-', prefix='', suffix='').replace(' ', '').replace('[', '').replace(']', '');
+    # Print all objects with less columns
+    print(result[['Jour', 'Annee', 'Mois', 'Pays', 'Altitude', 'Objet', 'Lieu', 'Contexte', 'Catégorie', 'Titre', 'Poids', 'Taille', 'Couleur', 'Matiere', 'Origine']])
+
+    # Message send to OSC with the full sequence of objects
+    print("Send an OSC message with the list {0}\n".format(object_result))
+    clientSequence.send_message("/control/controler/filter/result", object_result)
+
+    # Send each object of the sequence to processing
+    if CONFIG_IS_SEND_TO_PROCESSING:
+        for index, row in result.iterrows():
+            print("Send OSC message /video/enveloppe/id %i on port %i", row["Jour"], CONFIG_IS_SEND_TO_PROCESSING)
+            clientProcessing.send_message("/video/enveloppe/id", index+1)
+            time.sleep(CONFIG_PROCESSING_MS_SLEEP_BETWEEN_IMAGE/1000)
+
 
 def objects_selector(mode):
     # Mode 1 select all object where color is up to 11 and altitude >= 4000m
@@ -82,7 +181,6 @@ def objects_selector(mode):
     elif mode == "9":
         result = df.loc[(df['Altitude'] >= 2400)]
 
-
     # Old test filter
     '''
     if mode == "1":
@@ -101,21 +199,7 @@ def objects_selector(mode):
         result = df.sort_values(['Pays'], ascending=[1])
     '''
 
-    # Display all results of the sequence selected
-    object_result = np.array2string(result['Jour'].values, separator='-', prefix='', suffix='').replace(' ', '').replace('[', '').replace(']', '');
-    # Print all objects with less columns
-    print(result[['Jour', 'Annee', 'Mois', 'Pays', 'Altitude', 'Objet', 'Lieu', 'Contexte', 'Catégorie', 'Titre', 'Poids', 'Taille', 'Couleur', 'Matiere', 'Origine']])
-
-    # Message send to OSC with the full sequence of objects
-    print("Send an OSC message with the list {0}\n".format(object_result))
-    clientSequence.send_message("/control/controler/filter/result", object_result)
-
-    # Send each object of the sequence to processing
-    if CONFIG_IS_SEND_TO_PROCESSING:
-        for index, row in result.iterrows():
-            print("Send OSC message /video/enveloppe/id %i on port %i", row["Jour"], CONFIG_IS_SEND_TO_PROCESSING)
-            clientProcessing.send_message("/video/enveloppe/id", index+1)
-            time.sleep(CONFIG_PROCESSING_MS_SLEEP_BETWEEN_IMAGE/1000)
+    output_objects(result)
 
     # Write the sequence in a CSV file
     result.to_csv('data-0-4_tab_header_cleaned' + mode + '.csv', sep='\t') 

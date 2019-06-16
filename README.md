@@ -18,10 +18,24 @@ python3
 apt-get install pip
 ```
 
+With some systems it might be install with apt install command with a prefix "python-"
+
+apt install python-pip
+apt install python3-pip
+
+apt install virtualenv
+
 ### 3 Install virtual env
 ```bash
 pip install virtualenv
 ```
+
+Sometime I see that we need to install from apt command:
+
+```bash
+apt install virtualenv
+```
+
 
 ### 4 Create a virtual env in the project directory for the project
 
@@ -43,7 +57,7 @@ pip install python-osc
 pip install pandas
 ```
 
-##METHOD 2: MICROCONDAS (Mac)
+## METHOD 2: MICROCONDAS (Mac)
 Installation of the Python environment with minicondas
 
 ### 1 Install minicondas
@@ -168,19 +182,28 @@ cd .../backup
 source backuppip/bin/activate
 ```
 
-## 3 Start the program who sends OSC mode 
+## 3 Start the program who sends a sequence mode (with OSC message)
 
 ```bash
-python send_osc_mode.py
+python send_sequence.py
 ```
 
-This program tells the user to set a mode (1 or 2 or 3 or ... or 'exit')
+This program tells the user to set a sequence number (1 or 2 or 3 or ... or 'exit')
 
 It will send on the network an OSC message to the other program in order to select a 
+
+1: jour
+2: altitude
+3: km / jour
+4: Poids
+5: Taille
+6: Couleur
+7: Origine
+8: Matiere
 
 ## 4 Start the program who receives an OSC mode in order to return a selection of physical objects.
 Thos objects are listed in a limited number of columns and it sends another OSC message with the list of object id in a string.
 
 ```bash
-python select_objects_with_osc_mode.py
+python filter_objects.py
 ```

@@ -25,7 +25,7 @@ if __name__ == "__main__":
       exit(0)
     elif selectionMode.isdigit():
       print("Send an OSC message with the mode {0}\n".format(selectionMode))
-      client.send_message("/video/mode", selectionMode)
+      client.send_message("/control/controler/sequence", selectionMode)
     else:
       print ("'{0}' is not a digit or 'exit' string".format(selectionMode))
       exit(0);

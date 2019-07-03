@@ -24,12 +24,12 @@ if __name__ == "__main__":
   while (selectionMode != "exit"):
     selectionMode = input("Type a filter (value / min-max / reset ... or 'exit' to quit: ")
     if selectionMode == "value":
-      columnName = input("Type a column value (Pays, Couleur, Materiel, Origine): ")
+      columnName = input("Type a column value (pays, id_couleur, id_materiel, origine): ")
       keyValue = input("Type a key value (pour le pays cela peut être France, Moroco, .....): ")
       onOffValue = input("Type 1 (ON) or 0 (OFF): ")
       client.send_message("/control/controler/filter/value", columnName + " " + keyValue + " " + onOffValue)
     elif selectionMode == "min-max":
-      columnName = input("Type a column value (Altitude, Km_jours, Poids, Taille): ")
+      columnName = input("Type a column value (alti, kms, 'Poids (g)', taille): ")
       minValue = input("Type min value (23): ")
       maxValue = input("Type max value (2300): ")
       client.send_message("/control/controler/filter/min-max", columnName + " " + minValue + " " + maxValue)
